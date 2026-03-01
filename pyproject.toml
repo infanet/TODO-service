@@ -1,0 +1,19 @@
+[project]
+name = "todo-service"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "ad",email = "antosha_klepikov@bk.ru"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[all] (>=0.135.0,<0.136.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false

@@ -1,0 +1,15 @@
+from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, func, TEXT, DateTime
+
+from db import Base
+
+class RefreshToken(Base):
+    __tablename__ = 'refresh_tokens'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    token: Mapped[str] = mapped_column(TEXT, unique=True, indexed=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_revoked: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

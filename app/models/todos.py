@@ -21,7 +21,7 @@ class Todo(Base):
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     title: Mapped[str] = mapped_column()
-    description: Mapped[str] = mapped_column(TEXT)
+    description: Mapped[str | None] = mapped_column(TEXT)
     is_completed: Mapped[bool] = mapped_column(
         default=False, server_default=text("false")
     )
@@ -35,7 +35,7 @@ class Todo(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    user: Mapped["User"] = relationship(
+    user_todos: Mapped["User"] = relationship(
         "User",
         back_populates="todo",
     )
@@ -43,11 +43,11 @@ class Todo(Base):
     t_tags: Mapped[list["Tag"]] = relationship(
         "Tag",
         secondary="todo_tags",
-        back_populates="",
+        back_populates="t_todos",
         viewonly=True,
     )
 
-    items: Mapped["TodoTags"] = relationship(
+    items: Mapped[list["TodoTags"]] = relationship(
         "TodoTags",
         back_populates="todos_todo",
         cascade="all, delete-orphan",

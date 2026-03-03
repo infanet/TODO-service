@@ -21,13 +21,13 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
-    refresh_token: Mapped["RefreshToken"] = relationship(
+    refresh_token: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken",
         back_populates="user_token",
         cascade="all, delete-orphan",
     )
 
-    tag = Mapped[list["Tag"]] = relationship(
+    tag: Mapped[list["Tag"]] = relationship(
         "Tag",
         back_populates="user_tags",
         cascade="all, delete-orphan",

@@ -4,12 +4,20 @@ from sqlalchemy import ForeignKey, func, TEXT, DateTime
 
 from db import Base
 
+
 class RefreshToken(Base):
-    __tablename__ = 'refresh_tokens'
+    __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     token: Mapped[str] = mapped_column(TEXT, unique=True, indexed=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_revoked: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    user_token: Mapped["User"] = relationship(
+        "User",
+        back_populates="user_token",
+    )

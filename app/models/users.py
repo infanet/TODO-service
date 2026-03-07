@@ -17,20 +17,37 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    todo: Mapped[list["Todo"]] = relationship(
+    #############################################################
+    todos: Mapped[list["Todo"]] = relationship(
         "Todo",
         back_populates="user_todos",
         cascade="all, delete-orphan",
     )
 
-    refresh_token: Mapped[list["RefreshToken"]] = relationship(
+    ############################################################
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken",
         back_populates="user_token",
         cascade="all, delete-orphan",
     )
 
-    tag: Mapped[list["Tag"]] = relationship(
+    ###########################################################
+    tags: Mapped[list["Tag"]] = relationship(
         "Tag",
         back_populates="user_tags",
+        cascade="all, delete-orphan",
+    )
+
+    ############################################################
+    categories: Mapped[list["Category"]] = relationship(
+        "Category",
+        back_populates="user_categories",
+        cascade="all, delete-orphan",
+    )
+
+    ################################################################
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment",
+        back_populates="user_comments",
         cascade="all, delete-orphan",
     )

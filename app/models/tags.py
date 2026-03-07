@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, UniqueConstraint, String, text, func, DateTime
 
 from db import Base
+from models.todo_tags import todo_tags
 
 
 class Tag(Base):
@@ -16,28 +17,23 @@ class Tag(Base):
     color: Mapped[str] = mapped_column(
         String(7), default="#10b981", server_default=text("#10b981")
     )
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
+    ######################################################################
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+
     user_tags: Mapped["User"] = relationship(
         "User",
-        back_populates="tag",
+        back_populates="tags",
     )
 
+    ######################################################################
     t_todos: Mapped[list["Todo"]] = relationship(
         "Todo",
-        secondary="todo_tags",
+        secondary=todo_tags,
         back_populates="t_tags",
-        viewonly=True,
-    )
-
-    items: Mapped[list["TodoTags"]] = relationship(
-        "TodoTags",
-        back_populates="todos_tag",
-        cascade="all, delete-orphan",
-        single_parent=True,
     )

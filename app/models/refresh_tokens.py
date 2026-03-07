@@ -10,9 +10,6 @@ class RefreshToken(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     token: Mapped[str] = mapped_column(TEXT, unique=True, index=False)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_revoked: Mapped[bool] = mapped_column(
         default=False, server_default=text("false")
@@ -21,7 +18,12 @@ class RefreshToken(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
+    #################################################################
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
     user_token: Mapped["User"] = relationship(
         "User",
-        back_populates="refresh_token",
+        back_populates="refresh_tokens",
     )

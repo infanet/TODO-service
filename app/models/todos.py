@@ -4,8 +4,8 @@ from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, TEXT, Enum as SAEnum, func, DateTime, String
 
-from app.db import Base
-from app.models.todo_tags import todo_tags
+from db import Base
+from .todo_tags import todo_tags
 
 
 class Status(enum.Enum):

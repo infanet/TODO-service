@@ -1,6 +1,6 @@
 from sqlalchemy import ForeignKey, Column, Table
 
-from app.db import Base
+from db import Base
 
 todo_tags = Table(
     "todo_tags",

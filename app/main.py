@@ -1,7 +1,11 @@
 import uvicorn
 from fastapi import FastAPI
 
-app = FastAPI()
+from api import v1_router
+
+app = FastAPI(title="Todo Service")
+
+app.include_router(v1_router)
 
 
 @app.get("/")

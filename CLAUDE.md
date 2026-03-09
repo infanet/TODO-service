@@ -23,17 +23,30 @@ The app lives under `app/`, entry point at `app/main.py`.
 ```
 app/
 ├── main.py          # FastAPI app instance and router registration
-├── api/v1/          # Route handlers — add one file per resource here
+├── api/v1/
+│   ├── router.py    # Top-level v1 router (prefix /api/v1); includes resource routers
+│   ├── __init__.py  # re-exports resource routers for router.py
+│   └── users/       # One directory per resource
+│       ├── router_users.py   # Assembles all user CRUD routers
+│       ├── get_users.py      # GET /users
+│       ├── get_user.py       # GET /users/{id}
+│       ├── post_user.py      # POST /users
+│       ├── put_user.py       # PUT /users/{id}
+│       └── delete_user.py    # DELETE /users/{id}
 ├── core/
 │   └── config.py    # Settings (pydantic-settings); reads .env; exposes `settings` singleton
 ├── db/
 │   ├── base.py      # DeclarativeBase (`Base`)
-│   ├── database.py  # imports settings.DATABASE_URL; exposes DATABASE_URL; no session factory yet
-│   └── __init__.py  # exports `Base` and `DATABASE_URL`
+│   ├── database.py  # exposes DATABASE_URL, async_engine, async_session_factory, get_async_session
+│   └── __init__.py  # exports `Base`, `DATABASE_URL`, `get_async_session`
 ├── models/          # SQLAlchemy ORM models; __init__.py re-exports all 6 models
 ├── services/        # Business logic layer (empty stub)
 └── shemas/          # Pydantic schemas — intentional typo, keep it consistent (empty stub)
 ```
+
+### Routing Pattern
+
+Each resource lives in its own directory under `app/api/v1/`. CRUD operations are split into separate files, each exposing a `router`. A `router_<resource>.py` file assembles them with `include_router`. Then `app/api/v1/router.py` includes each resource router under the `/api/v1` prefix, and `app/main.py` registers that top-level router.
 
 ## Data Model
 
@@ -49,17 +62,18 @@ Six ORM models (all inherit `Base` from `app.db`). `TodoTags` is a join table, n
 
 ## Configuration
 
-`app/core/config.py` defines `Settings(BaseSettings)` with fields: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`. Reads from `.env` at project root. Exposes `settings` singleton and a `DATABASE_URL` property. `app/core/__init__.py` re-exports `settings`.
+`app/core/config.py` defines `Settings(BaseSettings)` with fields: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`. Reads from `.env` at project root. Exposes `settings` singleton and a `DATABASE_URL` property (returns `postgresql+asyncpg://...` URL). `app/core/__init__.py` re-exports `settings`.
 
 ## Alembic
 
-Initialized. `alembic/env.py` inserts `app/` into `sys.path`, then imports `from db import Base, DATABASE_URL` and `import models` (triggers all model imports for autogenerate). Runs async migrations via `asyncio.run(run_async_migrations())`.
+Initialized. `alembic/env.py` inserts `app/` into `sys.path`, then imports `from db import Base, DATABASE_URL` and `import models` (triggers all model imports for autogenerate). Sets `sqlalchemy.url` from `DATABASE_URL` at runtime, so `alembic.ini` URL is ignored. Runs async migrations via `asyncio.run(run_async_migrations())`.
 
 ## Key Conventions
 
 - **SQLAlchemy 2.x** with `Mapped`/`mapped_column` typed annotations.
-- **Import asymmetry**: ORM models import `Base` from `db` (bare module name, no `app.` prefix) because `app/` is added to `sys.path` at runtime. `alembic/env.py` uses `from app.db import ...` (runs from project root).
+- **Import asymmetry**: Route handlers and ORM models import from bare module names (`from db import ...`, `from models import ...`) because `app/` is on `sys.path` at runtime. `alembic/env.py` uses `from app.db import ...` (runs from project root where `app/` is not on `sys.path`).
 - All models must be listed in `app/models/__init__.py` for Alembic autogenerate to detect all tables.
+- **Session DI**: inject `AsyncSession` via `Depends(get_async_session)` (imported from `db`).
 
 ## Missing Dependencies
 

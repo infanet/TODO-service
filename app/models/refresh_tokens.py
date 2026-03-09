@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, func, TEXT, DateTime, text
 
-from db import Base
+from app.db import Base
 
 
 class RefreshToken(Base):

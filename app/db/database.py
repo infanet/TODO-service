@@ -1,3 +1,3 @@
-from core import BASE_DIR
+from app.core import settings
 
-DATABASE_URL = f"sqlite+aiosqlite:///{BASE_DIR}/database.db"
+DATABASE_URL = settings.DATABASE_URL

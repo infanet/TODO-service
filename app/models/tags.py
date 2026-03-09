@@ -15,7 +15,7 @@ class Tag(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50))
     color: Mapped[str] = mapped_column(
-        String(7), default="#10b981", server_default=text("#10b981")
+        String(7), default="#10b981", server_default=text("'#10b981'")
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

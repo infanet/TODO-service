@@ -1,5 +1,5 @@
 __all__ = [
-    "BASE_DIR",
+    "settings",
 ]
 
-from .config import BASE_DIR
+from .config import settings

@@ -1,6 +1,6 @@
 from pydantic import ConfigDict
 
-from user_base import UserBase
+from .user_base import UserBase
 
 
 class UserResponse(UserBase):

@@ -1,19 +1,18 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from db import get_async_session
-from models import User
+from schemas import UserCreate, UserResponse
+from services import create_user
+from repositories import UserRepository
 
 router = APIRouter()
 
 
-@router.post("/create")
-async def create_user(
-    user,
+@router.post("/create", response_model=UserResponse)
+async def handle_create_user(
+    user: UserCreate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    new_user = User(**user)
-    session.add(new_user)
-    await session.commit()
-    return new_user
+    result = await create_user(UserRepository(session=session), user)
+    return result

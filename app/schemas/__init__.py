@@ -3,4 +3,4 @@ __all__ = [
     "UserResponse",
 ]
 
-from users import UserCreate, UserResponse
+from .users import UserCreate, UserResponse

@@ -40,13 +40,24 @@ app/
 │   ├── database.py  # exposes DATABASE_URL, async_engine, async_session_factory, get_async_session
 │   └── __init__.py  # exports `Base`, `DATABASE_URL`, `get_async_session`
 ├── models/          # SQLAlchemy ORM models; __init__.py re-exports all 6 models
-├── services/        # Business logic layer (empty stub)
-└── shemas/          # Pydantic schemas — intentional typo, keep it consistent (empty stub)
+├── schemas/         # Pydantic schemas; one subdirectory per resource (e.g. schemas/users/)
+│   └── users/       # UserBase, UserCreate, UserResponse
+├── services/        # Business logic layer; thin functions that accept a repository and call it
+├── repositories/    # Data access layer; classes (e.g. UserRepository) that wrap AsyncSession queries
+└── shemas/          # (legacy empty stub — use schemas/ for all new schemas)
 ```
 
 ### Routing Pattern
 
 Each resource lives in its own directory under `app/api/v1/`. CRUD operations are split into separate files, each exposing a `router`. A `router_<resource>.py` file assembles them with `include_router`. Then `app/api/v1/router.py` includes each resource router under the `/api/v1` prefix, and `app/main.py` registers that top-level router.
+
+### Layered Architecture
+
+Requests flow: **router → service → repository**.
+
+- **Repository** (e.g. `UserRepository`) wraps `AsyncSession` and exposes named query methods (`all_users`, etc.). Instantiated in the route handler with the injected session.
+- **Service** (e.g. `get_users`) is a plain async function that receives a repository instance and contains business logic.
+- **Router** creates the repository, calls the service, and returns a response.
 
 ## Data Model
 
@@ -77,7 +88,7 @@ Initialized. `alembic/env.py` inserts `app/` into `sys.path`, then imports `from
 
 ## Missing Dependencies
 
-Not yet in `pyproject.toml`: `PyJWT`, `passlib[bcrypt]`, `pydantic-settings`.
+Not yet in `pyproject.toml` (verify before using): `PyJWT`, `passlib[bcrypt]`, `pydantic-settings`.
 
 ## Infrastructure
 

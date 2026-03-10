@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from db import get_async_session
-from models import User
+from services import get_users
+from repositories import UserRepository
 
 router = APIRouter()
 
 
 @router.get("/")
 async def get_user(session: AsyncSession = Depends(get_async_session)):
-    stmt = await session.execute(select(User))
-    return stmt.scalars().all()
+    users = await get_users(UserRepository(session=session))
+    return users

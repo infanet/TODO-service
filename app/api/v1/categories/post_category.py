@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from schemas import CategoryResponse, CategoryCreate
 from db import get_async_session
-from services import create_category
+from services import CategoryService
 
 router = APIRouter()
 
@@ -16,5 +16,5 @@ async def handle_create_category(
     data: CategoryCreate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    result = await create_category(session=session, user_id=user_id, data=data)
+    result = await CategoryService(session).create_category(user_id=user_id, data=data)
     return result

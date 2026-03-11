@@ -3,6 +3,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from schemas import CategoryResponse
 from db import get_async_session
-from services import get_categories
+from services import CategoryService
 
 router = APIRouter()

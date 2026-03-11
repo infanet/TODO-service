@@ -5,21 +5,22 @@ from repositories import CategoryRepository, UserRepository
 from schemas import CategoryCreate
 
 
-def category_repositories(session: AsyncSession) -> CategoryRepository:
-    return CategoryRepository(session)
+class CategoryService:
+    def __init__(self, session: AsyncSession):
+        self.category_repositories = CategoryRepository(session=session)
 
+    async def get_categories(self):
+        categories = await self.category_repositories.get_all()
+        return categories
 
-async def get_categories(session: AsyncSession):
-    categories = await category_repositories(session).get_all()
-    return categories
-
-
-async def create_category(user_id, session: AsyncSession, data: CategoryCreate):
-    user = await UserRepository(session).get_by_one(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+    async def create_category(self, data: CategoryCreate, user_id):
+        user = await UserRepository(self.category_repositories.session).get_by_one(
+            user_id
         )
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
 
-    result = await category_repositories(session).create(data=data, user_id=user_id)
-    return result
+        result = await self.category_repositories.create(data=data, user_id=user_id)
+        return result

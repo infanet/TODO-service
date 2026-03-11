@@ -35,4 +35,3 @@ class UserRepository:
     async def del_user(self, user):
         await self.session.delete(user)
         await self.session.commit()
-        return user

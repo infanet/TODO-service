@@ -3,8 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_async_session
 from schemas import UserCreate, UserResponse
-from services import create_user
-from repositories import UserRepository
+from services import UserService
 
 router = APIRouter()
 
@@ -16,5 +15,5 @@ async def handle_create_user(
     user: UserCreate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    result = await create_user(session=session, data=user)
+    result = await UserService(session).create_user(user)
     return result

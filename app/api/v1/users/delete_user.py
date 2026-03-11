@@ -3,12 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_async_session
 from services import UserService
+from schemas import UserResponse
 
 router = APIRouter()
 
 
-@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/delete", response_model=UserResponse)
 async def handle_delete_user(
     user_id: int, session: AsyncSession = Depends(get_async_session)
 ):
-    await UserService(session).delete_user(user_id)
+    return await UserService(session).delete_user(user_id)

@@ -37,3 +37,4 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
         await self.user_repositories.del_user(user)
+        return user

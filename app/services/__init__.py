@@ -3,6 +3,8 @@ __all__ = [
     "get_user",
     "create_user",
     "delete_user",
+    "get_categories",
+    "create_category",
 ]
 
 from .users_services import (
@@ -10,4 +12,9 @@ from .users_services import (
     get_user,
     create_user,
     delete_user,
+)
+
+from .categories_services import (
+    get_categories,
+    create_category,
 )

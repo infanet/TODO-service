@@ -9,7 +9,7 @@ from schemas import UserResponse
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("/all", response_model=list[UserResponse])
 async def handle_get_users(session: AsyncSession = Depends(get_async_session)):
-    users = await get_users(UserRepository(session=session))
-    return users
+    result = await get_users(session=session)
+    return result

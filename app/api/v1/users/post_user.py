@@ -14,5 +14,5 @@ async def handle_create_user(
     user: UserCreate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    result = await create_user(UserRepository(session=session), user)
+    result = await create_user(session=session, data=user)
     return result

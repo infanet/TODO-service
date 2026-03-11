@@ -14,6 +14,9 @@ class Category(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
+    )
 
     ######################################################
     user_id: Mapped[int] = mapped_column(

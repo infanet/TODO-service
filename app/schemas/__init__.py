@@ -4,7 +4,16 @@ __all__ = [
     "CategoryCreate",
     "CategoryResponse",
     "CategoryPatch",
+    "CategoriesUserResponse",
 ]
 
-from .users import UserCreate, UserResponse
-from .categories import CategoryCreate, CategoryResponse, CategoryPatch
+from .users import (
+    UserCreate,
+    UserResponse,
+)
+from .categories import (
+    CategoryCreate,
+    CategoryResponse,
+    CategoryPatch,
+    CategoriesUserResponse,
+)

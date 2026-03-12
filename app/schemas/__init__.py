@@ -5,6 +5,9 @@ __all__ = [
     "CategoryResponse",
     "CategoryPatch",
     "CategoriesUserResponse",
+    "TodoCreate",
+    "TodoPatch",
+    "TodoResponse",
 ]
 
 from .users import (
@@ -16,4 +19,9 @@ from .categories import (
     CategoryResponse,
     CategoryPatch,
     CategoriesUserResponse,
+)
+from .todos import (
+    TodoCreate,
+    TodoPatch,
+    TodoResponse,
 )

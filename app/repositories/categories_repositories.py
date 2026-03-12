@@ -10,8 +10,7 @@ class CategoryRepository:
         self.session = session
 
     async def get_all(self):
-        res = await self.session.execute(select(Category))
-        return res.scalars().all()
+        return (await self.session.scalars(select(Category))).all()
 
     async def get_by_id(self, category_id: int):
         category = await self.session.execute(

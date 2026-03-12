@@ -10,8 +10,7 @@ class UserRepository:
         self.session = session
 
     async def get_all(self):
-        result = await self.session.execute(select(User))
-        return result.scalars().all()
+        return (await self.session.scalars(select(User))).all()
 
     async def get_by_one(self, user_id: int):
         result = await self.session.execute(select(User).where(User.id == user_id))

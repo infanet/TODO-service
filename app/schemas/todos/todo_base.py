@@ -9,4 +9,4 @@ class TodoBase(BaseModel):
     description: str | None = None
     status: Status = Status.todo
     priority: Priority = Priority.medium
-    deleted: datetime | None = None
+    deadline: datetime | None = None

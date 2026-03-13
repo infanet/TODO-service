@@ -6,7 +6,7 @@ from models import Todo
 
 class TodoRepositories:
     def __init__(self, session: AsyncSession):
-        self.todo_repositories = session
+        self.session = session
 
     async def get_all(self):
-        return (await self.todo_repositories.scalars(select(Todo))).all()
+        return (await self.session.scalars(select(Todo))).all()

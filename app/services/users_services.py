@@ -1,40 +1,33 @@
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories import UserRepository
 from schemas import UserCreate
+from core import AllError, ErrorMessages
 
 
 class UserService:
     def __init__(self, session: AsyncSession):
-        self.user_repositories = UserRepository(session=session)
+        self.user_repositories = UserRepository(session)
 
     async def get_users(self):
         users = await self.user_repositories.get_all()
         return users
 
     async def get_user(self, user_id: int):
-        result = await self.user_repositories.get_by_one(user_id)
+        result = await self.user_repositories.get_by_id(user_id)
         if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise AllError(ErrorMessages.USER_404).not_found()
         return result
 
     async def create_user(self, data: UserCreate):
         existing_user = await self.user_repositories.get_by_email(str(data.email))
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists",
-            )
+            raise AllError(ErrorMessages.USER_400).bad_request()
         return await self.user_repositories.create(data)
 
     async def delete_user(self, user_id: int):
-        user = await self.user_repositories.get_by_one(user_id)
+        user = await self.user_repositories.get_by_id(user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise AllError(ErrorMessages.USER_404).not_found()
         await self.user_repositories.del_user(user)
         return user

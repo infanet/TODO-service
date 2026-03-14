@@ -10,8 +10,7 @@ class UserService:
         self.user_repositories = UserRepository(session)
 
     async def get_users(self):
-        users = await self.user_repositories.get_all()
-        return users
+        return await self.user_repositories.get_all()
 
     async def get_user(self, user_id: int):
         result = await self.user_repositories.get_by_id(user_id)

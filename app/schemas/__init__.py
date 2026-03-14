@@ -9,6 +9,10 @@ __all__ = [
     "TodoPatch",
     "TodoResponse",
     "TodoItems",
+    "TagCreate",
+    "TagPatch",
+    "TagResponse",
+    "TagItem",
 ]
 
 from .users import (
@@ -26,4 +30,10 @@ from .todos import (
     TodoPatch,
     TodoResponse,
     TodoItems,
+)
+from .tags import (
+    TagCreate,
+    TagPatch,
+    TagResponse,
+    TagItem,
 )

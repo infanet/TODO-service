@@ -11,25 +11,22 @@ class CategoryService:
         self.category_repositories = CategoryRepository(session)
 
     async def get_categories(self):
-        categories = await self.category_repositories.get_all()
-        return categories
+        return await self.category_repositories.get_all()
 
     async def get_category_by_users(self, user_id: int, category_id: int):
         user = await self.user_repositories.get_by_id(user_id)
         if not user:
             raise AllError(ErrorMessages.USER_404).not_found()
-        user_categories = await self.category_repositories.get_id_user_categories(
+        return await self.category_repositories.get_id_user_categories(
             user_id, category_id
         )
-        return user_categories
 
     async def create_category(self, data: CategoryCreate, user_id):
         user = await self.user_repositories.get_by_id(user_id)
         if not user:
             raise AllError(ErrorMessages.USER_404).not_found()
 
-        result = await self.category_repositories.create(data=data, user_id=user_id)
-        return result
+        return await self.category_repositories.create(data=data, user_id=user_id)
 
     async def patch_category(self, new_category, category_id):
         category = await self.category_repositories.get_by_id(category_id)

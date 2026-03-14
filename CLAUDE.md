@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A FastAPI TODO service, managed with **Poetry**. Uses PostgreSQL via `asyncpg`. Configuration is read from a `.env` file via `pydantic-settings` (bundled inside `fastapi[all]`).
 
-JWT authentication and password hashing are **not yet implemented** — `RefreshToken`, `Tag`, and `Comment` models exist in the DB but have no service/router layer yet.
+JWT authentication and password hashing are **not yet implemented** — `RefreshToken` model exists in the DB but has no service/router layer yet.
 
 ## Commands
 
@@ -32,7 +32,9 @@ app/
 │       ├── router.py          # Top-level v1 router (prefix /api/v1); includes resource routers
 │       ├── users/             # GET /all, GET /one, POST /create, DELETE /delete
 │       ├── categories/        # GET /, GET /one, POST /create, PATCH /patch, DELETE /delete
-│       └── todos/             # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
+│       ├── todos/             # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
+│       ├── tags/              # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
+│       └── comments/          # GET /all, GET /item, POST /create, PUT /update, DELETE /delete
 ├── core/
 │   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
 │   ├── exceptions.py      # AllError class — raises HTTPException via .not_found() / .bad_request()
@@ -45,7 +47,9 @@ app/
 ├── schemas/         # Pydantic schemas; __init__.py re-exports all
 │   ├── users/       # UserBase, UserCreate, UserResponse
 │   ├── categories/  # CategoryBase, CategoryCreate, CategoryResponse, CategoryPatch, CategoriesUserResponse
-│   └── todos/       # TodoBase, TodoCreate, TodoResponse, TodoPatch, TodoItems
+│   ├── todos/       # TodoBase, TodoCreate, TodoResponse, TodoPatch, TodoItems
+│   ├── tags/        # TagBase, TagCreate, TagPatch, TagResponse, TagItem
+│   └── comments/    # CommentBase, CommentCreate, CommentResponse, TodoComment, CommentItemResponse
 ├── services/        # Business logic as classes; __init__.py re-exports all services
 └── repositories/    # Data access as classes; __init__.py re-exports all repositories
 ```
@@ -82,6 +86,17 @@ for key, value in update_data.items():
 await self.session.commit()
 await self.session.refresh(obj)
 ```
+
+### Put Pattern (full update, repositories)
+
+```python
+for key, value in new_data.model_dump().items():  # all fields, no exclude_unset
+    setattr(obj, key, value)
+await self.session.commit()
+await self.session.refresh(obj)
+```
+
+Use `model_dump()` without `exclude_unset=True` — updates all fields regardless of what was sent.
 
 ### Delete Pattern
 
@@ -154,6 +169,24 @@ All routes are under `/api/v1`.
 | POST | `/create` | `user_id`, `category_id` | `TodoCreate` |
 | PATCH | `/patch` | `user_id`, `category_id`, `todo_id` | `TodoPatch` |
 | DELETE | `/delete` | `todo_id` | — |
+
+### Tags (`/tags`)
+| Method | Path | Query params | Body |
+|--------|------|-------------|------|
+| GET | `/all` | — | — |
+| GET | `/one` | `user_id`, `tag_id` | — |
+| POST | `/create` | `user_id` | `TagCreate` |
+| PATCH | `/patch` | `user_id`, `tag_id` | `TagPatch` |
+| DELETE | `/delete` | `tag_id` | — |
+
+### Comments (`/comments`)
+| Method | Path | Query params | Body |
+|--------|------|-------------|------|
+| GET | `/all` | — | — |
+| GET | `/item` | `user_id`, `todo_id`, `comment_id` | — |
+| POST | `/create` | `user_id`, `todo_id` | `CommentCreate` |
+| PUT | `/update` | `user_id`, `todo_id`, `comment_id` | `CommentCreate` |
+| DELETE | `/delete` | `comment_id` | — |
 
 ## Data Model
 

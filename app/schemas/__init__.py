@@ -13,6 +13,9 @@ __all__ = [
     "TagPatch",
     "TagResponse",
     "TagItem",
+    "CommentCreate",
+    "CommentResponse",
+    "CommentItemResponse",
 ]
 
 from .users import (
@@ -36,4 +39,9 @@ from .tags import (
     TagPatch,
     TagResponse,
     TagItem,
+)
+from .comments import (
+    CommentCreate,
+    CommentResponse,
+    CommentItemResponse,
 )

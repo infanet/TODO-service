@@ -9,4 +9,4 @@ class TodoPatch(BaseModel):
     description: str | None = None
     status: Status | None = None
     priority: Priority | None = None
-    deleted: datetime | None = None
+    deadline: datetime | None = None

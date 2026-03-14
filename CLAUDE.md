@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A FastAPI TODO service with JWT authentication, managed with **Poetry**. Uses PostgreSQL via `asyncpg`. Configuration is read from a `.env` file via `pydantic-settings`.
+A FastAPI TODO service, managed with **Poetry**. Uses PostgreSQL via `asyncpg`. Configuration is read from a `.env` file via `pydantic-settings` (bundled inside `fastapi[all]`).
+
+JWT authentication and password hashing are **not yet implemented** — `RefreshToken`, `Tag`, and `Comment` models exist in the DB but have no service/router layer yet.
 
 ## Commands
 
@@ -14,6 +16,7 @@ uvicorn app.main:app --reload               # Run dev server (from project root)
 black .                                     # Format code
 alembic upgrade head                        # Apply migrations (from project root)
 alembic revision --autogenerate -m "msg"    # Generate a migration (from project root)
+docker compose up -d                        # Start PostgreSQL container
 ```
 
 ## Architecture
@@ -27,8 +30,8 @@ app/
 │   ├── __init__.py  # exports v1_router
 │   └── v1/
 │       ├── router.py          # Top-level v1 router (prefix /api/v1); includes resource routers
-│       ├── users/             # GET /all, POST /create, DELETE /delete
-│       ├── categories/        # GET /, GET /{id}, POST /create, PATCH /patch, DELETE /delete
+│       ├── users/             # GET /all, GET /one, POST /create, DELETE /delete
+│       ├── categories/        # GET /, GET /one, POST /create, PATCH /patch, DELETE /delete
 │       └── todos/             # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
 ├── core/
 │   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
@@ -80,6 +83,25 @@ await self.session.commit()
 await self.session.refresh(obj)
 ```
 
+### Delete Pattern
+
+Repository only deletes — no refresh (object is gone):
+```python
+await self.session.delete(obj)
+await self.session.commit()
+```
+
+Service fetches the object first (to return it), then deletes:
+```python
+obj = await self.repo.get_by_id(obj_id)
+if not obj:
+    raise AllError(ErrorMessages.X_404).not_found()
+await self.repo.del_x(obj)
+return obj  # returns the deleted object
+```
+
+DELETE endpoints return the deleted object as their response model.
+
 ### Nested Query Pattern (repositories)
 
 For fetching a nested hierarchy (e.g. user → category → todo), repositories use `selectinload` with `with_loader_criteria` to filter related collections in a single query:
@@ -103,17 +125,47 @@ The response schema mirrors this nesting: `TodoItems(UserResponse)` contains `ca
 
 `model_config = ConfigDict(from_attributes=True)` is required **only in Response schemas** — they receive SQLAlchemy objects from the DB. Create/Patch schemas receive plain JSON and do not need it.
 
+## API Routes
+
+All routes are under `/api/v1`.
+
+### Users (`/users`)
+| Method | Path | Query params | Body |
+|--------|------|-------------|------|
+| GET | `/all` | — | — |
+| GET | `/one` | `user_id` | — |
+| POST | `/create` | — | `UserCreate` |
+| DELETE | `/delete` | `user_id` | — |
+
+### Categories (`/categories`)
+| Method | Path | Query params | Body |
+|--------|------|-------------|------|
+| GET | `/` | — | — |
+| GET | `/one` | `user_id`, `category_id` | — |
+| POST | `/create` | `user_id` | `CategoryCreate` |
+| PATCH | `/patch` | `category_id` | `CategoryPatch` |
+| DELETE | `/delete` | `category_id` | — |
+
+### Todos (`/todos`)
+| Method | Path | Query params | Body |
+|--------|------|-------------|------|
+| GET | `/all` | — | — |
+| GET | `/one` | `user_id`, `category_id`, `todo_id` | — |
+| POST | `/create` | `user_id`, `category_id` | `TodoCreate` |
+| PATCH | `/patch` | `user_id`, `category_id`, `todo_id` | `TodoPatch` |
+| DELETE | `/delete` | `todo_id` | — |
+
 ## Data Model
 
 Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not exported from `models/__init__.py`.
 
 - **`User`** — `username`, `email` (unique, indexed), `hashed_password`, `is_active`, `created_at`; relationships: `todos`, `tags`, `refresh_tokens`, `categories`, `comments`
-- **`Todo`** — FK→`users.id`, FK→`categories.id`; `title`, `description` (TEXT), `status` (`Status` enum: todo/done/in_progress), `priority` (`Priority` enum: low/medium/high), `deadline`, `created_at`, `updated_at`
+- **`Todo`** — FK→`users.id`, FK→`categories.id` (nullable); `title`, `description` (TEXT), `status` (`Status` enum: todo/done/in_progress), `priority` (`Priority` enum: low/medium/high), `deadline`, `created_at`, `updated_at`
 - **`Tag`** — FK→`users.id`, `name`, `color` (String(7), default `#10b981`); unique per user via `UniqueConstraint("user_id", "name")`
 - **`TodoTags`** — join table (`todo_id`, `tag_id`) with composite PK
-- **`RefreshToken`** — FK→`users.id`, `token` (TEXT, unique), `expires_at`, `is_revoked`, `created_at`
-- **`Category`** — FK→`users.id`, `name`, `color` (String(7)), `created_at`; `back_populates="user_categories"` on User
-- **`Comment`** — FK→`users.id`, FK→`todos.id`, `content` (TEXT), `created_at`
+- **`RefreshToken`** — FK→`users.id`, `token` (TEXT, unique, indexed), `expires_at`, `is_revoked`, `created_at`
+- **`Category`** — FK→`users.id`, `name`, `color` (String(7)), `created_at`, `updated_at`; `back_populates="user_categories"` on User
+- **`Comment`** — FK→`users.id`, FK→`todos.id`, `content` (TEXT), `created_at`, `updated_at`
 
 ## Configuration
 

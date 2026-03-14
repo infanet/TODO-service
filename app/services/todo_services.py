@@ -6,6 +6,7 @@ from repositories import (
     UserRepository,
 )
 from core import AllError, ErrorMessages
+from schemas import TodoPatch
 
 
 class TodoService:
@@ -43,3 +44,31 @@ class TodoService:
         return await self.todo_repositories.create(
             user_id=user_id, category_id=category_id, todo=todo
         )
+
+    async def patch_todo(
+        self,
+        user_id: int,
+        category_id: int,
+        todo_id: int,
+        new_todo: TodoPatch,
+    ):
+        user = await self.user_repositories.get_by_id(user_id)
+        if not user:
+            raise AllError(ErrorMessages.USER_404).not_found()
+        category = await self.category_repositories.get_by_id(category_id)
+        if not category:
+            raise AllError(ErrorMessages.CATEGORY_404).not_found()
+        todo = await self.todo_repositories.get_by_id(todo_id)
+        if not todo:
+            raise AllError(ErrorMessages.TODO_404).not_found()
+
+        return await self.todo_repositories.patch(todo=todo, new_todo=new_todo)
+
+    async def delete_todo(self, todo_id: int):
+        todo = await self.todo_repositories.get_by_id(todo_id)
+        if not todo:
+            raise AllError(ErrorMessages.TODO_404).not_found()
+
+        await self.todo_repositories.del_todo(todo)
+
+        return todo

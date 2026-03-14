@@ -1,3 +1,24 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from schemas import TodoResponse, TodoPatch
+from services import TodoService
+from db import get_async_session
 
 router = APIRouter()
+
+
+@router.patch("/patch", response_model=TodoResponse)
+async def handle_patch_todo(
+    user_id: int,
+    category_id: int,
+    todo_id: int,
+    new_todo: TodoPatch,
+    session: AsyncSession = Depends(get_async_session),
+):
+    return await TodoService(session).patch_todo(
+        user_id=user_id,
+        category_id=category_id,
+        todo_id=todo_id,
+        new_todo=new_todo,
+    )

@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
 from models import Todo, User, Category
-from schemas import TodoCreate
+from schemas import TodoCreate, TodoPatch
 
 
 class TodoRepositories:
@@ -37,3 +37,18 @@ class TodoRepositories:
         await self.session.commit()
         await self.session.refresh(new_todo)
         return new_todo
+
+    async def patch(self, todo, new_todo: TodoPatch):
+        update_data = new_todo.model_dump(exclude_unset=True)
+
+        for key, value in update_data.items():
+            setattr(todo, key, value)
+
+        await self.session.commit()
+        await self.session.refresh(todo)
+
+        return todo
+
+    async def del_todo(self, todo):
+        await self.session.delete(todo)
+        await self.session.commit()

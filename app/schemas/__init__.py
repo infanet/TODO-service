@@ -8,6 +8,7 @@ __all__ = [
     "TodoCreate",
     "TodoPatch",
     "TodoResponse",
+    "TodoItems",
 ]
 
 from .users import (
@@ -24,4 +25,5 @@ from .todos import (
     TodoCreate,
     TodoPatch,
     TodoResponse,
+    TodoItems,
 )

@@ -27,15 +27,13 @@ app/
 │   ├── __init__.py  # exports v1_router
 │   └── v1/
 │       ├── router.py          # Top-level v1 router (prefix /api/v1); includes resource routers
-│       ├── __init__.py        # re-exports router
-│       ├── users/             # GET /, GET /{id}, POST /create, DELETE /{id}
-│       │   ├── router_users.py
-│       │   ├── get_users.py, get_user.py, post_user.py, delete_user.py
-│       └── categories/        # GET /, GET /{id}, POST /, PATCH /{id}, DELETE /{id}
-│           ├── router_categories.py
-│           ├── get_categories.py, get_category.py, post_category.py, patch_category.py, delete_category.py
+│       ├── users/             # GET /all, POST /create, DELETE /delete
+│       ├── categories/        # GET /, GET /{id}, POST /create, PATCH /patch, DELETE /delete
+│       └── todos/             # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
 ├── core/
-│   └── config.py    # Settings (pydantic-settings); reads .env; exposes `settings` singleton
+│   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
+│   ├── exceptions.py      # AllError class — raises HTTPException via .not_found() / .bad_request()
+│   └── error_messages.py  # ErrorMessages class — string constants (USER_404, CATEGORY_404, etc.)
 ├── db/
 │   ├── base.py      # DeclarativeBase (`Base`)
 │   ├── database.py  # exposes DATABASE_URL, async_engine, async_session_factory, get_async_session
@@ -43,9 +41,10 @@ app/
 ├── models/          # SQLAlchemy ORM models; __init__.py re-exports all (except TodoTags)
 ├── schemas/         # Pydantic schemas; __init__.py re-exports all
 │   ├── users/       # UserBase, UserCreate, UserResponse
-│   └── categories/  # CategoryBase, CategoryCreate, CategoryResponse, CategoryPatch
-├── services/        # Business logic as classes; __init__.py re-exports UserService, CategoryService
-└── repositories/    # Data access as classes; __init__.py re-exports UserRepository, CategoryRepository
+│   ├── categories/  # CategoryBase, CategoryCreate, CategoryResponse, CategoryPatch, CategoriesUserResponse
+│   └── todos/       # TodoBase, TodoCreate, TodoResponse, TodoPatch, TodoItems
+├── services/        # Business logic as classes; __init__.py re-exports all services
+└── repositories/    # Data access as classes; __init__.py re-exports all repositories
 ```
 
 ### Routing Pattern
@@ -56,20 +55,64 @@ Each resource lives in its own directory under `app/api/v1/`. CRUD operations ar
 
 Requests flow: **router → service → repository**.
 
-- **Repository** (e.g. `UserRepository`) wraps `AsyncSession` and exposes named query methods. Instantiated inside the service.
-- **Service** (e.g. `UserService`) is a **class** that takes `session: AsyncSession` in `__init__`, creates its own repository, and contains business logic (raises `HTTPException` on errors).
-- **Router** instantiates the service with the injected session and calls its method: `UserService(session).create_user(data)`.
+- **Repository** wraps `AsyncSession` and exposes named query methods. Always calls `commit()` + `refresh()` after writes (refresh is needed to get server-generated fields: `id`, `created_at`, etc.).
+- **Service** takes `session: AsyncSession` in `__init__`, creates its own repositories, contains business logic. Uses `AllError(ErrorMessages.X).not_found()` / `.bad_request()` for HTTP errors.
+- **Router** instantiates the service with the injected session and calls its method.
+
+### Error Handling Pattern
+
+```python
+from core import AllError, ErrorMessages
+
+raise AllError(ErrorMessages.USER_404).not_found()      # 404
+raise AllError(ErrorMessages.USER_400).bad_request()    # 400
+```
+
+`ErrorMessages` holds string constants. `AllError(detail)` wraps them into `HTTPException`.
+
+### Patch Pattern (repositories)
+
+```python
+update_data = new_data.model_dump(exclude_unset=True)  # only fields sent by client
+for key, value in update_data.items():
+    setattr(obj, key, value)
+await self.session.commit()
+await self.session.refresh(obj)
+```
+
+### Nested Query Pattern (repositories)
+
+For fetching a nested hierarchy (e.g. user → category → todo), repositories use `selectinload` with `with_loader_criteria` to filter related collections in a single query:
+
+```python
+result = await self.session.execute(
+    select(User)
+    .options(
+        selectinload(User.categories).selectinload(Category.todos),
+        with_loader_criteria(Category, Category.id == category_id),
+        with_loader_criteria(Todo, Todo.id == todo_id),
+    )
+    .where(User.id == user_id)
+)
+return result.scalar_one_or_none()
+```
+
+The response schema mirrors this nesting: `TodoItems(UserResponse)` contains `categories: list[TodosCategory]`, and `TodosCategory(CategoryResponse)` contains `todos: list[TodoResponse]`.
+
+### Pydantic Schemas
+
+`model_config = ConfigDict(from_attributes=True)` is required **only in Response schemas** — they receive SQLAlchemy objects from the DB. Create/Patch schemas receive plain JSON and do not need it.
 
 ## Data Model
 
-Six ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not exported from `__init__.py`.
+Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not exported from `models/__init__.py`.
 
-- **`User`** — `username`, `email` (unique, indexed), `hashed_password`, `is_active`, `created_at`; owns `todo`, `tag`, `refresh_token`, `category`, `comment` relationships
+- **`User`** — `username`, `email` (unique, indexed), `hashed_password`, `is_active`, `created_at`; relationships: `todos`, `tags`, `refresh_tokens`, `categories`, `comments`
 - **`Todo`** — FK→`users.id`, FK→`categories.id`; `title`, `description` (TEXT), `status` (`Status` enum: todo/done/in_progress), `priority` (`Priority` enum: low/medium/high), `deadline`, `created_at`, `updated_at`
 - **`Tag`** — FK→`users.id`, `name`, `color` (String(7), default `#10b981`); unique per user via `UniqueConstraint("user_id", "name")`
-- **`TodoTags`** — join table (`todo_id`, `tag_id`) with composite PK; `Todo`↔`Tag` many-to-many via `secondary="todo_tags"` (viewonly) + explicit `items` relationships for writes
+- **`TodoTags`** — join table (`todo_id`, `tag_id`) with composite PK
 - **`RefreshToken`** — FK→`users.id`, `token` (TEXT, unique), `expires_at`, `is_revoked`, `created_at`
-- **`Category`** — FK→`users.id`, `name`, `color` (String(7)), `created_at`; owns relationship to `Todo`
+- **`Category`** — FK→`users.id`, `name`, `color` (String(7)), `created_at`; `back_populates="user_categories"` on User
 - **`Comment`** — FK→`users.id`, FK→`todos.id`, `content` (TEXT), `created_at`
 
 ## Configuration
@@ -83,14 +126,10 @@ Six ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not e
 ## Key Conventions
 
 - **SQLAlchemy 2.x** with `Mapped`/`mapped_column` typed annotations.
-- **Import asymmetry**: Route handlers, services, repositories, and ORM models import from bare module names (`from db import ...`, `from models import ...`, `from schemas import ...`) because `app/` is on `sys.path` at runtime. Alembic env.py does the same since it also inserts `app/` into `sys.path`.
+- **Import asymmetry**: all internal imports use bare module names (`from db import ...`, `from models import ...`, `from schemas import ...`, `from core import ...`) because `app/` is on `sys.path`. This applies to routers, services, repositories, and alembic env.py.
 - All models must be listed in `app/models/__init__.py` for Alembic autogenerate to detect all tables.
 - **Session DI**: inject `AsyncSession` via `Depends(get_async_session)` (imported from `db`).
 - `app/shemas/` is a legacy empty stub — use `app/schemas/` for all new schemas.
-
-## Missing Dependencies
-
-Not yet in `pyproject.toml` (add before using): `PyJWT`, `passlib[bcrypt]`, `pydantic-settings`.
 
 ## Infrastructure
 

@@ -3,7 +3,7 @@
   <component name="Black">
     <option name="enabledOnReformat" value="true" />
     <option name="enabledOnSave" value="true" />
-    <option name="sdkName" value="Poetry (TODO-service) (3)" />
+    <option name="sdkName" value="Poetry (TODO-service)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (TODO-service)" project-jdk-type="Python SDK" />
 </project>

@@ -12,7 +12,7 @@ class CategoryRepository:
     async def get_all(self):
         return (await self.session.scalars(select(Category))).all()
 
-    async def get_by_id(self, category_id: int):
+    async def get_by_id(self, category_id):
         category = await self.session.execute(
             select(Category).where(Category.id == category_id)
         )

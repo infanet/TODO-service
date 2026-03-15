@@ -47,7 +47,7 @@ app/
 ├── schemas/         # Pydantic schemas; __init__.py re-exports all
 │   ├── users/       # UserBase, UserCreate, UserResponse
 │   ├── categories/  # CategoryBase, CategoryCreate, CategoryResponse, CategoryPatch, CategoriesUserResponse
-│   ├── todos/       # TodoBase, TodoCreate, TodoResponse, TodoPatch, TodoItems
+│   ├── todos/       # TodoBase, TodoCreate, TodoResponse, TodoPatch, TodoItems, TodosCategory
 │   ├── tags/        # TagBase, TagCreate, TagPatch, TagResponse, TagItem
 │   └── comments/    # CommentBase, CommentCreate, CommentResponse, TodoComment, CommentItemResponse
 ├── services/        # Business logic as classes; __init__.py re-exports all services
@@ -63,8 +63,31 @@ Each resource lives in its own directory under `app/api/v1/`. CRUD operations ar
 Requests flow: **router → service → repository**.
 
 - **Repository** wraps `AsyncSession` and exposes named query methods. Always calls `commit()` + `refresh()` after writes (refresh is needed to get server-generated fields: `id`, `created_at`, etc.).
-- **Service** takes `session: AsyncSession` in `__init__`, creates its own repositories, contains business logic. Uses `AllError(ErrorMessages.X).not_found()` / `.bad_request()` for HTTP errors.
+- **Service** takes `session: AsyncSession` in `__init__`. Each service owns a `get_404_not_found(id)` method that fetches the resource and raises a 404 if missing. Services that validate foreign entities inject the relevant service (not repository) — e.g. `CategoryService` holds a `UserService` instance and calls `self.user_services.get_404_not_found(user_id)`.
 - **Router** instantiates the service with the injected session and calls its method.
+
+### Service Dependency Pattern
+
+Services compose other services for cross-entity validation:
+
+```python
+class CategoryService:
+    def __init__(self, session: AsyncSession):
+        self.user_services = UserService(session)        # delegates user validation
+        self.category_repositories = CategoryRepository(session)
+
+    async def get_404_not_found(self, category_id: int):
+        category = await self.category_repositories.get_by_id(category_id)
+        if not category:
+            raise AllError(ErrorMessages.CATEGORY_404).not_found()
+        return category
+
+    async def create_category(self, data, user_id):
+        await self.user_services.get_404_not_found(user_id)  # validate user exists
+        return await self.category_repositories.create(data=data, user_id=user_id)
+```
+
+Dependency chain: `CommentService` → `TodoService` → `CategoryService` → `UserService`.
 
 ### Error Handling Pattern
 
@@ -214,7 +237,6 @@ Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not
 - **Import asymmetry**: all internal imports use bare module names (`from db import ...`, `from models import ...`, `from schemas import ...`, `from core import ...`) because `app/` is on `sys.path`. This applies to routers, services, repositories, and alembic env.py.
 - All models must be listed in `app/models/__init__.py` for Alembic autogenerate to detect all tables.
 - **Session DI**: inject `AsyncSession` via `Depends(get_async_session)` (imported from `db`).
-- `app/shemas/` is a legacy empty stub — use `app/schemas/` for all new schemas.
 
 ## Infrastructure
 

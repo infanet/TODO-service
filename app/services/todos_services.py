@@ -1,45 +1,37 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories import (
-    TodoRepositories,
-    CategoryRepository,
-    UserRepository,
-)
+from repositories import TodoRepositories
+from services import UserService, CategoryService
 from core import AllError, ErrorMessages
 from schemas import TodoPatch
 
 
 class TodoService:
     def __init__(self, session: AsyncSession):
-        self.user_repositories = UserRepository(session)
-        self.category_repositories = CategoryRepository(session)
+        self.user_services = UserService(session)
+        self.category_services = CategoryService(session)
         self.todo_repositories = TodoRepositories(session)
+
+    async def get_404_not_found(self, todo_id: int):
+        todo = await self.todo_repositories.get_by_id(todo_id)
+        if not todo:
+            raise AllError(ErrorMessages.TODO_404).not_found()
+        return todo
 
     async def get_todos(self):
         return await self.todo_repositories.get_all()
 
     async def get_todo(self, user_id: int, category_id: int, todo_id: int):
-        user = await self.user_repositories.get_by_id(user_id)
-        if not user:
-            raise AllError(ErrorMessages.USER_404).not_found()
-        category = await self.category_repositories.get_by_id(category_id)
-        if not category:
-            raise AllError(ErrorMessages.CATEGORY_404).not_found()
-        todo = await self.todo_repositories.get_by_id(todo_id)
-        if not todo:
-            raise AllError(ErrorMessages.TODO_404).not_found()
+        await self.user_services.get_404_not_found(user_id)
+        await self.category_services.get_404_not_found(category_id)
+        await self.get_404_not_found(todo_id)
         return await self.todo_repositories.get_id_user_with_category_with_todo(
             user_id=user_id, category_id=category_id, todo_id=todo_id
         )
 
     async def create_todo(self, user_id, category_id, todo):
-        user = await self.user_repositories.get_by_id(user_id)
-        if not user:
-            raise AllError(ErrorMessages.USER_404).not_found()
-
-        category = await self.category_repositories.get_by_id(category_id)
-        if not category:
-            raise AllError(ErrorMessages.CATEGORY_404).not_found()
+        await self.user_services.get_404_not_found(user_id)
+        await self.category_services.get_404_not_found(category_id)
 
         return await self.todo_repositories.create(
             user_id=user_id, category_id=category_id, todo=todo
@@ -52,22 +44,14 @@ class TodoService:
         todo_id: int,
         new_todo: TodoPatch,
     ):
-        user = await self.user_repositories.get_by_id(user_id)
-        if not user:
-            raise AllError(ErrorMessages.USER_404).not_found()
-        category = await self.category_repositories.get_by_id(category_id)
-        if not category:
-            raise AllError(ErrorMessages.CATEGORY_404).not_found()
-        todo = await self.todo_repositories.get_by_id(todo_id)
-        if not todo:
-            raise AllError(ErrorMessages.TODO_404).not_found()
+        await self.user_services.get_404_not_found(user_id)
+        await self.category_services.get_404_not_found(category_id)
+        todo = await self.get_404_not_found(todo_id)
 
         return await self.todo_repositories.patch(todo=todo, new_todo=new_todo)
 
     async def delete_todo(self, todo_id: int):
-        todo = await self.todo_repositories.get_by_id(todo_id)
-        if not todo:
-            raise AllError(ErrorMessages.TODO_404).not_found()
+        todo = await self.get_404_not_found(todo_id)
 
         await self.todo_repositories.del_todo(todo)
 

@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/one", response_model=TodoItems)
-async def handel_get_todo(
+async def handle_get_todo(
     user_id: int,
     category_id: int,
     todo_id: int,

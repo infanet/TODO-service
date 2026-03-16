@@ -5,6 +5,7 @@ from .categories import router_categories
 from .todos import router_todos
 from .tags import router_tags
 from .comments import router_comments
+from .auth import router_auth
 
 router = APIRouter(prefix="/api/v1")
 
@@ -13,3 +14,4 @@ router.include_router(router_categories, prefix="/categories", tags=["categories
 router.include_router(router_todos, prefix="/todos", tags=["todos"])
 router.include_router(router_tags, prefix="/tags", tags=["tags"])
 router.include_router(router_comments, prefix="/comments", tags=["comments"])
+router.include_router(router_auth, prefix="/auth", tags=["auth"])

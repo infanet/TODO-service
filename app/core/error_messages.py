@@ -6,8 +6,8 @@ class ErrorMessages:
     COMMENT_404 = "Comment not found"
     ##############################################################
     USER_400 = "User with this email already exists"
-    CATEGORY_400 = ""
-    TODO_400 = ""
-    TAG_400 = ""
-    COMMENT_400 = ""
+    # CATEGORY_400 = ""
+    # TODO_400 = ""
+    # TAG_400 = ""
+    # COMMENT_400 = ""
     ##############################################################

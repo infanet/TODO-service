@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
 from models import Category, User
@@ -6,7 +7,7 @@ from schemas import CategoryCreate
 
 
 class CategoryRepository:
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
     async def get_all(self):

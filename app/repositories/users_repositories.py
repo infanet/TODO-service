@@ -20,11 +20,11 @@ class UserRepository:
         result = await self.session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
-    async def create(self, data: UserCreate):
+    async def create(self, user: UserCreate, hashed_password: str):
         new_user = User(
-            username=data.username,
-            email=data.email,
-            hashed_password=data.password,
+            username=user.username,
+            email=str(user.email),
+            hashed_password=hashed_password,
         )
         self.session.add(new_user)
         await self.session.commit()

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A FastAPI TODO service, managed with **Poetry**. Uses PostgreSQL via `asyncpg`. Configuration is read from a `.env` file via `pydantic-settings` (bundled inside `fastapi[all]`).
 
-JWT authentication and password hashing are **not yet implemented** — `RefreshToken` model exists in the DB but has no service/router layer yet.
+Password hashing is implemented in `app/core/security.py` (bcrypt). JWT authentication is **not yet implemented** — `RefreshToken` model exists in the DB, `security.py` is the planned location for `create_access_token`/`decode_access_token`, and `JWT_PLAN.md` at the project root describes the full implementation plan.
 
 ## Commands
 
@@ -37,19 +37,22 @@ app/
 │       └── comments/          # GET /all, GET /item, POST /create, PUT /update, DELETE /delete
 ├── core/
 │   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
-│   ├── exceptions.py      # AllError class — raises HTTPException via .not_found() / .bad_request()
-│   └── error_messages.py  # ErrorMessages class — string constants (USER_404, CATEGORY_404, etc.)
+│   ├── exceptions.py      # AllError class — returns HTTPException via .not_found() / .bad_request()
+│   ├── error_messages.py  # ErrorMessages class — string constants (USER_404, CATEGORY_404, etc.)
+│   └── security.py        # hash_password, verify_password (bcrypt); future JWT functions go here
 ├── db/
 │   ├── base.py      # DeclarativeBase (`Base`)
 │   ├── database.py  # exposes DATABASE_URL, async_engine, async_session_factory, get_async_session
 │   └── __init__.py  # exports `Base`, `DATABASE_URL`, `get_async_session`
 ├── models/          # SQLAlchemy ORM models; __init__.py re-exports all (except TodoTags)
-├── schemas/         # Pydantic schemas; __init__.py re-exports all
-│   ├── users/       # UserBase, UserCreate, UserResponse
-│   ├── categories/  # CategoryBase, CategoryCreate, CategoryResponse, CategoryPatch, CategoriesUserResponse
-│   ├── todos/       # TodoBase, TodoCreate, TodoResponse, TodoPatch, TodoItems, TodosCategory
-│   ├── tags/        # TagBase, TagCreate, TagPatch, TagResponse, TagItem
-│   └── comments/    # CommentBase, CommentCreate, CommentResponse, TodoComment, CommentItemResponse
+├── schemas/         # Pydantic schemas; __init__.py re-exports all (see below)
+│   ├── users/       # exported: UserCreate, UserResponse
+│   ├── categories/  # exported: CategoryCreate, CategoryResponse, CategoryPatch, CategoriesUserResponse
+│   ├── todos/       # exported: TodoCreate, TodoResponse, TodoPatch, TodoItems
+│   │                # internal: TodosCategory (defined in todo_response.py, used for nesting)
+│   ├── tags/        # exported: TagCreate, TagPatch, TagResponse, TagItem
+│   └── comments/    # exported: CommentCreate, CommentResponse, CommentItemResponse
+│                    # internal: TodoComment (defined in comment_response.py, used for nesting)
 ├── services/        # Business logic as classes; __init__.py re-exports all services
 └── repositories/    # Data access as classes; __init__.py re-exports all repositories
 ```
@@ -163,6 +166,8 @@ The response schema mirrors this nesting: `TodoItems(UserResponse)` contains `ca
 
 `model_config = ConfigDict(from_attributes=True)` is required **only in Response schemas** — they receive SQLAlchemy objects from the DB. Create/Patch schemas receive plain JSON and do not need it.
 
+Response schemas that nest other resource types import from the top-level `schemas` package (e.g. `from schemas import UserResponse`), not from sibling modules. This is the correct pattern to avoid circular imports between subpackages.
+
 ## API Routes
 
 All routes are under `/api/v1`.
@@ -237,6 +242,8 @@ Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not
 - **Import asymmetry**: all internal imports use bare module names (`from db import ...`, `from models import ...`, `from schemas import ...`, `from core import ...`) because `app/` is on `sys.path`. This applies to routers, services, repositories, and alembic env.py.
 - All models must be listed in `app/models/__init__.py` for Alembic autogenerate to detect all tables.
 - **Session DI**: inject `AsyncSession` via `Depends(get_async_session)` (imported from `db`).
+- **`core/__init__.py`** exports: `settings`, `AllError`, `ErrorMessages`, `hash_password`, `verify_password`. All future `security.py` functions should also be added here.
+- **`AllError` usage**: it *returns* an HTTPException, so it must be used with `raise`: `raise AllError(ErrorMessages.USER_404).not_found()`.
 
 ## Infrastructure
 

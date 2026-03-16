@@ -43,3 +43,8 @@ class TagService:
         await self.tag_repositories.del_tag(tag)
 
         return tag
+
+    # - add_tag_to_todo()(через
+    # промежуточную
+    # таблицу)
+    # - remove_tag_from_todo()

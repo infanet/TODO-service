@@ -11,7 +11,3 @@ class CategoryResponse(CategoryBase):
 
 class CategoriesUserResponse(UserResponse):
     categories: list[CategoryResponse]
-
-
-class CategoryUserResponse(UserResponse):
-    categories: CategoryResponse

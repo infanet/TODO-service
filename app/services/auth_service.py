@@ -54,7 +54,7 @@ class AuthService:
         return await self.user_repository.create(user=user, hashed_password=hashed)
 
     async def login(self, login_user: LoginRequest) -> TokenResponse:
-        user: User = await self.user_repository.get_by_email(str(login_user.email))
+        user: User = await self.user_repository.get_by_email(str(login_user.username))
         if not user or not verify_password(login_user.password, user.hashed_password):
             raise AllError("Invalid email or password").bad_request()
 

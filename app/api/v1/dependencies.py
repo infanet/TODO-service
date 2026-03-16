@@ -1,10 +1,6 @@
 # защита маршрутов
 from fastapi import Depends
-from fastapi.security import (
-    HTTPBearer,
-    HTTPAuthorizationCredentials,
-    OAuth2PasswordBearer,
-)
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 import jwt
 
@@ -12,14 +8,13 @@ from db import get_async_session
 from repositories import UserRepository
 from core import decode_token, AllError
 
-bearer_scheme = HTTPBearer()  # читает заголовок: Authorization: Bearer <token>
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    token: str = Depends(oauth2_scheme),
     session: AsyncSession = Depends(get_async_session),
 ):
-    token = credentials.credentials
     try:
         payload = decode_token(token)
     except jwt.ExpiredSignatureError:

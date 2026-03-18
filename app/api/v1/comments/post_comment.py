@@ -12,12 +12,11 @@ router = APIRouter()
 
 @router.post("/create", response_model=CommentResponse)
 async def handle_create_comment(
-    user_id: int,
     todo_id: int,
     comment: CommentCreate,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
     return await CommentService(session).create_comment(
-        user_id=user_id, todo_id=todo_id, comment=comment
+        user=current_user, todo_id=todo_id, comment=comment
     )

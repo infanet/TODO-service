@@ -16,4 +16,6 @@ async def handle_delete_comment(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await CommentService(session).delete_comment(comment_id)
+    return await CommentService(session).delete_comment(
+        comment_id=comment_id, user=current_user
+    )

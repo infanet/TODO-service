@@ -12,12 +12,11 @@ router = APIRouter()
 
 @router.get("/item", response_model=CommentItemResponse)
 async def handle_get_item(
-    user_id: int,
     todo_id: int,
     comment_id: int,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
     return await CommentService(session).get_item(
-        user_id=user_id, todo_id=todo_id, comment_id=comment_id
+        user=current_user, todo_id=todo_id, comment_id=comment_id
     )

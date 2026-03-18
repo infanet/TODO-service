@@ -11,3 +11,4 @@ class ErrorMessages:
     # TAG_400 = ""
     # COMMENT_400 = ""
     ##############################################################
+    FORBIDDEN_403 = "You do not have permission to perform this action"

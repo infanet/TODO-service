@@ -9,6 +9,7 @@ router = APIRouter()
 
 
 @router.get("/all", response_model=list[UserResponse])
-async def handle_get_users(session: AsyncSession = Depends(get_async_session)):
-    result = await UserService(session).get_users()
-    return result
+async def handle_get_users(
+    session: AsyncSession = Depends(get_async_session),
+):
+    return await UserService(session).get_users()

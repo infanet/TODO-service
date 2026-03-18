@@ -10,8 +10,14 @@ class CategoryRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all(self):
-        return (await self.session.scalars(select(Category))).all()
+    async def get_all(self, current_user: User):
+        return (
+            await self.session.execute(
+                select(User)
+                .options(selectinload(User.categories))
+                .where(User.id == current_user.id)
+            )
+        ).scalar_one()
 
     async def get_by_id(self, category_id):
         category = await self.session.execute(
@@ -19,7 +25,7 @@ class CategoryRepository:
         )
         return category.scalar_one_or_none()
 
-    async def get_id_user_categories(self, user_id: int, category_id: int):
+    async def get_id_user_category(self, user_id: int, category_id: int):
         user_categories = await self.session.execute(
             select(User)
             .options(
@@ -28,10 +34,10 @@ class CategoryRepository:
             )
             .where(User.id == user_id)
         )
-        return user_categories.scalar_one_or_none()
+        return user_categories.scalar_one()
 
-    async def create(self, data: CategoryCreate, user_id):
-        category = Category(**data.model_dump(), user_id=user_id)
+    async def create(self, category: CategoryCreate, user: User):
+        category = Category(**category.model_dump(), user_id=user.id)
         self.session.add(category)
         await self.session.commit()
         await self.session.refresh(category)

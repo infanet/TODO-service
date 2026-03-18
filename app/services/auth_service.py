@@ -1,29 +1,3 @@
-# register()
-#         → проверить что email не занят (через user_repo)
-#         → проверить что username не занят (через user_repo)
-#         → хэшировать пароль
-#         → создать пользователя (через user_repo)
-#         → вернуть UserResponse
-#
-#     login()
-#         → найти пользователя по email (через user_repo)
-#         → проверить пароль (bcrypt)
-#         → создать access_token + refresh_token
-#         → сохранить refresh_token (через refresh_token_repo)
-#         → вернуть TokenResponse
-#
-#     refresh()
-#         → декодировать refresh_token
-#         → найти токен в БД (через refresh_token_repo)
-#         → проверить что не отозван и не истёк
-#         → отозвать старый токен
-#         → создать новую пару токенов
-#         → вернуть TokenResponse
-#
-#     logout()
-#         → найти refresh_token в БД
-#         → пометить is_revoked = True          (отозвать refresh token)
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories import UserRepository, RefreshTokenRepository

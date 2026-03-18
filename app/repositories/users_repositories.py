@@ -13,8 +13,10 @@ class UserRepository:
         return (await self.session.scalars(select(User))).all()
 
     async def get_by_id(self, user_id: int):
-        result = await self.session.execute(select(User).where(User.id == user_id))
-        return result.scalar_one_or_none()
+        """не трогать оно относится к v1/dependencies.py"""
+        return (
+            await self.session.execute(select(User).where(User.id == user_id))
+        ).scalar_one_or_none()
 
     async def get_by_email(self, email: str):
         result = await self.session.execute(select(User).where(User.email == email))

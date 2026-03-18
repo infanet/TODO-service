@@ -50,7 +50,7 @@ class TodoService:
 
         return await self.todo_repositories.patch(todo=todo, new_todo=new_todo)
 
-    async def delete_todo(self, todo_id: int):
+    async def delete_todo(self, todo_id: int, user_id: int):
         todo = await self.get_404_not_found(todo_id)
 
         await self.todo_repositories.del_todo(todo)

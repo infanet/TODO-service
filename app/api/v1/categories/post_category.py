@@ -14,10 +14,11 @@ router = APIRouter()
     "/create", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED
 )
 async def handle_create_category(
-    user_id: int,
-    data: CategoryCreate,
+    category: CategoryCreate,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await CategoryService(session).create_category(user_id=user_id, data=data)
+    result = await CategoryService(session).create_category(
+        user=current_user, category=category
+    )
     return result

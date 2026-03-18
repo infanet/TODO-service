@@ -20,4 +20,5 @@ async def handle_patch_category(
     return await CategoryService(session).patch_category(
         new_category=new_category,
         category_id=category_id,
+        current_user=current_user,
     )

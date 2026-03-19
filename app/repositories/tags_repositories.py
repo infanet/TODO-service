@@ -10,27 +10,31 @@ class TagRepositories:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all(self):
-        return (await self.session.scalars(select(Tag))).all()
+    async def get_all(self, user: User):
+        return (
+            await self.session.execute(
+                select(User).options(selectinload(User.tags)).where(User.id == user.id)
+            )
+        ).scalar_one()
 
     async def get_by_id(self, tag_id: int):
         return (
             await self.session.execute(select(Tag).where(Tag.id == tag_id))
         ).scalar_one_or_none()
 
-    async def get_tag_user(self, user_id: int, tag_id: int):
+    async def get_tag_user(self, user: User, tag_id: int):
         return (
             await self.session.execute(
                 select(User)
                 .options(
                     selectinload(User.tags), with_loader_criteria(Tag, Tag.id == tag_id)
                 )
-                .where(User.id == user_id)
+                .where(User.id == user.id)
             )
         ).scalar_one_or_none()
 
-    async def create(self, user_id: int, tag: TagCreate):
-        new_tag = Tag(**tag.model_dump(), user_id=user_id)
+    async def create(self, user: User, tag: TagCreate):
+        new_tag = Tag(**tag.model_dump(), user_id=user.id)
         self.session.add(new_tag)
         await self.session.commit()
         await self.session.refresh(new_tag)

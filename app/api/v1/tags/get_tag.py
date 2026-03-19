@@ -12,9 +12,8 @@ router = APIRouter()
 
 @router.get("/one", response_model=TagItem)
 async def handle_get_tag(
-    user_id: int,
     tag_id: int,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await TagService(session).get_tag(user_id=user_id, tag_id=tag_id)
+    return await TagService(session).get_tag(user=current_user, tag_id=tag_id)

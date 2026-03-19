@@ -12,9 +12,8 @@ router = APIRouter()
 
 @router.post("/create", response_model=TagResponse)
 async def handle_create_tag(
-    user_id: int,
     tag: TagCreate,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await TagService(session).create_tag(user_id=user_id, tag=tag)
+    return await TagService(session).create_tag(user=current_user, tag=tag)

@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from models import User
 from repositories import TagRepositories
 from services import UserService
 from schemas import TagCreate, TagPatch
@@ -17,34 +18,44 @@ class TagService:
             raise AllError(ErrorMessages.TAG_404).not_found()
         return tag
 
-    async def get_tags(self):
-        return await self.tag_repositories.get_all()
+    async def get_tags(self, user: User):
+        return await self.tag_repositories.get_all(user)
 
-    async def get_tag(self, user_id: int, tag_id: int):
-        await self.user_services.get_404_not_found(user_id)
-        await self.get_404_not_found(tag_id)
+    async def get_tag(self, user: User, tag_id: int):
+        tag = await self.get_404_not_found(tag_id)
 
-        return await self.tag_repositories.get_tag_user(user_id=user_id, tag_id=tag_id)
+        await self.user_services.check_current(
+            data_id=tag.user_id, current_user_id=user.id
+        )
 
-    async def create_tag(self, user_id, tag: TagCreate):
-        await self.user_services.get_404_not_found(user_id)
+        return await self.tag_repositories.get_tag_user(user=user, tag_id=tag_id)
 
-        return await self.tag_repositories.create(user_id=user_id, tag=tag)
+    async def create_tag(self, user: User, tag: TagCreate):
 
-    async def patch_tag(self, user_id: int, tag_id: int, new_tag: TagPatch):
-        await self.user_services.get_404_not_found(user_id)
+        return await self.tag_repositories.create(user=user, tag=tag)
+
+    async def patch_tag(self, user: User, tag_id: int, new_tag: TagPatch):
 
         tag = await self.get_404_not_found(tag_id)
+
+        await self.user_services.check_current(
+            data_id=tag.user_id, current_user_id=user.id
+        )
 
         return await self.tag_repositories.patch(new_tag=new_tag, tag=tag)
 
-    async def delete_tag(self, tag_id: int):
+    async def delete_tag(self, tag_id: int, user: User):
         tag = await self.get_404_not_found(tag_id)
+
+        await self.user_services.check_current(
+            data_id=tag.user_id, current_user_id=user.id
+        )
         await self.tag_repositories.del_tag(tag)
 
         return tag
 
-    # - add_tag_to_todo()(через
-    # промежуточную
-    # таблицу)
-    # - remove_tag_from_todo()
+
+# - add_tag_to_todo()(через
+# промежуточную
+# таблицу)
+# - remove_tag_from_todo()

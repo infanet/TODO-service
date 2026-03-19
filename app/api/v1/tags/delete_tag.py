@@ -16,4 +16,4 @@ async def handle_delete_tag(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await TagService(session).delete_tag(tag_id)
+    return await TagService(session).delete_tag(tag_id=tag_id, user=current_user)

@@ -16,6 +16,4 @@ async def handle_delete_todo(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await TodoService(session).delete_todo(
-        todo_id=todo_id, user_id=current_user.id
-    )
+    return await TodoService(session).delete_todo(todo_id=todo_id, user=current_user)

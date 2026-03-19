@@ -12,12 +12,11 @@ router = APIRouter()
 
 @router.post("/create", response_model=TodoResponse)
 async def handle_create_todo(
-    user_id: int,
     category_id: int,
     todo: TodoCreate,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
     return await TodoService(session).create_todo(
-        user_id=user_id, category_id=category_id, todo=todo
+        user=current_user, category_id=category_id, todo=todo
     )

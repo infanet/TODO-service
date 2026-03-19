@@ -12,7 +12,6 @@ router = APIRouter()
 
 @router.patch("/patch", response_model=TodoResponse)
 async def handle_patch_todo(
-    user_id: int,
     category_id: int,
     todo_id: int,
     new_todo: TodoPatch,
@@ -20,7 +19,7 @@ async def handle_patch_todo(
     current_user: User = Depends(get_current_user),
 ):
     return await TodoService(session).patch_todo(
-        user_id=user_id,
+        user=current_user,
         category_id=category_id,
         todo_id=todo_id,
         new_todo=new_todo,

@@ -1,7 +1,7 @@
 from pydantic import ConfigDict
 
 from .tag_base import TagBase
-from schemas import UserResponse
+from schemas import UserResponse, TodoResponse
 
 
 class TagResponse(TagBase):
@@ -10,5 +10,9 @@ class TagResponse(TagBase):
     id: int
 
 
+class TodoTagResponse(TodoResponse):
+    t_tags: list[TagResponse]
+
+
 class TagItem(UserResponse):
-    tags: list[TagResponse]
+    todos: list[TodoTagResponse]

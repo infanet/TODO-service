@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A FastAPI TODO service, managed with **Poetry**. Uses PostgreSQL via `asyncpg`. Configuration is read from a `.env` file via `pydantic-settings` (bundled inside `fastapi[all]`).
 
-Password hashing is implemented in `app/core/security.py` (bcrypt). JWT authentication is **not yet implemented** — `RefreshToken` model exists in the DB, `security.py` is the planned location for `create_access_token`/`decode_access_token`, and `JWT_PLAN.md` at the project root describes the full implementation plan.
+Password hashing and JWT authentication are implemented in `app/core/security.py`. Access + refresh tokens use symmetric HS256 signing. The `RefreshToken` model persists refresh tokens in the DB. Protected routes use the `get_current_user` dependency from `app/api/v1/dependencies.py`.
 
 ## Commands
 
@@ -30,11 +30,13 @@ app/
 │   ├── __init__.py  # exports v1_router
 │   └── v1/
 │       ├── router.py          # Top-level v1 router (prefix /api/v1); includes resource routers
+│       ├── auth/              # POST /register, POST /login, POST /refresh, POST /logout
 │       ├── users/             # GET /all, GET /one, POST /create, DELETE /delete
 │       ├── categories/        # GET /, GET /one, POST /create, PATCH /patch, DELETE /delete
 │       ├── todos/             # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
 │       ├── tags/              # GET /all, GET /one, POST /create, PATCH /patch, DELETE /delete
-│       └── comments/          # GET /all, GET /item, POST /create, PUT /update, DELETE /delete
+│       ├── comments/          # GET /all, GET /item, POST /create, PUT /update, DELETE /delete
+│       └── dependencies.py    # get_current_user — FastAPI dependency for protected routes
 ├── core/
 │   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
 │   ├── exceptions.py      # AllError class — returns HTTPException via .not_found() / .bad_request()
@@ -99,9 +101,25 @@ from core import AllError, ErrorMessages
 
 raise AllError(ErrorMessages.USER_404).not_found()      # 404
 raise AllError(ErrorMessages.USER_400).bad_request()    # 400
+raise AllError("Token expired").unauthorized()           # 401 (with WWW-Authenticate: Bearer)
+raise AllError(ErrorMessages.FORBIDDEN_403).forbidden() # 403
 ```
 
 `ErrorMessages` holds string constants. `AllError(detail)` wraps them into `HTTPException`.
+
+### Authorization Pattern
+
+All write/read-one operations check that the resource belongs to the authenticated user. `UserService.check_current` is a static method used for this:
+
+```python
+# In any service method, after fetching the resource:
+await self.user_services.check_current(
+    data_id=resource.user_id,   # owner stored on the resource
+    current_user_id=user.id,    # current_user injected by get_current_user
+)
+```
+
+Protected routes inject `current_user: User = Depends(get_current_user)` (imported from `..dependencies`) and pass it down to the service. The service never queries the user from the DB again — it uses the `User` object directly.
 
 ### Patch Pattern (repositories)
 
@@ -172,6 +190,16 @@ Response schemas that nest other resource types import from the top-level `schem
 
 All routes are under `/api/v1`.
 
+### Auth (`/auth`)
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/register` | `UserCreate` |
+| POST | `/login` | `OAuth2PasswordRequestForm` (form data) |
+| POST | `/refresh` | refresh token in body/cookie |
+| POST | `/logout` | — |
+
+Login returns `TokenResponse` with `access_token` and `token_type`. Protected routes use `OAuth2PasswordBearer` pointing to `/api/v1/auth/login`.
+
 ### Users (`/users`)
 | Method | Path | Query params | Body |
 |--------|------|-------------|------|
@@ -230,7 +258,7 @@ Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not
 
 ## Configuration
 
-`app/core/config.py` defines `Settings(BaseSettings)` with fields: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`. Reads from `.env` at project root. Exposes `settings` singleton and a `DATABASE_URL` property (returns `postgresql+asyncpg://...` URL).
+`app/core/config.py` defines `Settings(BaseSettings)` with fields: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `SECRET_KEY`, `ALGORITHM` (default `HS256`), `ACCESS_TOKEN_EXPIRE_MINUTES` (default 30), `REFRESH_TOKEN_EXPIRE_DAYS` (default 30). Reads from `.env` at project root. Exposes `settings` singleton and a `DATABASE_URL` property (returns `postgresql+asyncpg://...` URL).
 
 ## Alembic
 
@@ -242,7 +270,7 @@ Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not
 - **Import asymmetry**: all internal imports use bare module names (`from db import ...`, `from models import ...`, `from schemas import ...`, `from core import ...`) because `app/` is on `sys.path`. This applies to routers, services, repositories, and alembic env.py.
 - All models must be listed in `app/models/__init__.py` for Alembic autogenerate to detect all tables.
 - **Session DI**: inject `AsyncSession` via `Depends(get_async_session)` (imported from `db`).
-- **`core/__init__.py`** exports: `settings`, `AllError`, `ErrorMessages`, `hash_password`, `verify_password`. All future `security.py` functions should also be added here.
+- **`core/__init__.py`** exports: `settings`, `AllError`, `ErrorMessages`, `hash_password`, `verify_password`, `create_access_token`, `create_refresh_token`, `decode_token`. Any new `security.py` functions must also be re-exported here.
 - **`AllError` usage**: it *returns* an HTTPException, so it must be used with `raise`: `raise AllError(ErrorMessages.USER_404).not_found()`.
 
 ## Infrastructure

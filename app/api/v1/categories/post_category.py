@@ -18,7 +18,6 @@ async def handle_create_category(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await CategoryService(session).create_category(
+    return await CategoryService(session).create_category(
         user=current_user, category=category
     )
-    return result

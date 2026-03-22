@@ -18,7 +18,6 @@ __all__ = [
     "CommentItemResponse",
     "TokenResponse",
     "RefreshRequest",
-    "LoginRequest",
 ]
 
 from .users import (
@@ -51,5 +50,4 @@ from .comments import (
 from .auth import (
     TokenResponse,
     RefreshRequest,
-    LoginRequest,
 )

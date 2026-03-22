@@ -1,7 +1,7 @@
 # JWT функции
 import bcrypt
 import jwt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from core import settings
 
@@ -18,16 +18,14 @@ def create_access_token(user_id: int) -> str:
     payload = {
         "sub": str(user_id),
         "type": "access",
-        "exp": datetime.now(timezone.utc)
+        "exp": datetime.now(UTC)
         + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def create_refresh_token(user_id: int) -> tuple[str, datetime]:
-    expires_at = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+    expires_at = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub": str(user_id),
         "type": "refresh",

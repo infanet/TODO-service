@@ -15,5 +15,4 @@ async def handle_get_categories(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
 ):
-    results = await CategoryService(session).get_categories(current_user)
-    return results
+    return await CategoryService(session).get_categories(current_user)

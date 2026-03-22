@@ -41,7 +41,7 @@ app/
 │   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
 │   ├── exceptions.py      # AllError class — returns HTTPException via .not_found() / .bad_request()
 │   ├── error_messages.py  # ErrorMessages class — string constants (USER_404, CATEGORY_404, etc.)
-│   └── security.py        # hash_password, verify_password (bcrypt); future JWT functions go here
+│   └── security.py        # hash_password, verify_password (bcrypt), create_access_token, create_refresh_token, decode_token
 ├── db/
 │   ├── base.py      # DeclarativeBase (`Base`)
 │   ├── database.py  # exposes DATABASE_URL, async_engine, async_session_factory, get_async_session
@@ -87,12 +87,12 @@ class CategoryService:
             raise AllError(ErrorMessages.CATEGORY_404).not_found()
         return category
 
-    async def create_category(self, data, user_id):
-        await self.user_services.get_404_not_found(user_id)  # validate user exists
-        return await self.category_repositories.create(data=data, user_id=user_id)
+    async def create_category(self, user: User, category: CategoryCreate):
+        await self.user_services.get_404_not_found(user.id)  # validate user exists
+        return await self.category_repositories.create(category=category, user_id=user.id)
 ```
 
-Dependency chain: `CommentService` → `TodoService` → `CategoryService` → `UserService`.
+Dependency chains: `CommentService` → `TodoService` → `CategoryService` → `UserService`, and `TagService` → `TodoService` → `CategoryService` → `UserService`.
 
 ### Error Handling Pattern
 
@@ -191,14 +191,14 @@ Response schemas that nest other resource types import from the top-level `schem
 All routes are under `/api/v1`.
 
 ### Auth (`/auth`)
-| Method | Path | Body |
-|--------|------|------|
-| POST | `/register` | `UserCreate` |
-| POST | `/login` | `OAuth2PasswordRequestForm` (form data) |
-| POST | `/refresh` | refresh token in body/cookie |
-| POST | `/logout` | — |
+| Method | Path | Auth required | Body |
+|--------|------|--------------|------|
+| POST | `/register` | No | `UserCreate` |
+| POST | `/login` | No | `OAuth2PasswordRequestForm` (form data) |
+| POST | `/refresh` | Yes | `RefreshRequest` |
+| POST | `/logout` | Yes | `RefreshRequest`; returns 204 No Content |
 
-Login returns `TokenResponse` with `access_token` and `token_type`. Protected routes use `OAuth2PasswordBearer` pointing to `/api/v1/auth/login`.
+Login returns `TokenResponse` with `access_token` and `refresh_token`. Protected routes use `OAuth2PasswordBearer` pointing to `/api/v1/auth/login`.
 
 ### Users (`/users`)
 | Method | Path | Query params | Body |
@@ -212,36 +212,36 @@ Login returns `TokenResponse` with `access_token` and `token_type`. Protected ro
 | Method | Path | Query params | Body |
 |--------|------|-------------|------|
 | GET | `/` | — | — |
-| GET | `/one` | `user_id`, `category_id` | — |
-| POST | `/create` | `user_id` | `CategoryCreate` |
+| GET | `/one` | `category_id` | — |
+| POST | `/create` | — | `CategoryCreate` |
 | PATCH | `/patch` | `category_id` | `CategoryPatch` |
 | DELETE | `/delete` | `category_id` | — |
 
 ### Todos (`/todos`)
 | Method | Path | Query params | Body |
 |--------|------|-------------|------|
-| GET | `/all` | — | — |
-| GET | `/one` | `user_id`, `category_id`, `todo_id` | — |
-| POST | `/create` | `user_id`, `category_id` | `TodoCreate` |
-| PATCH | `/patch` | `user_id`, `category_id`, `todo_id` | `TodoPatch` |
+| GET | `/all` | `category_id` | — |
+| GET | `/one` | `category_id`, `todo_id` | — |
+| POST | `/create` | `category_id` | `TodoCreate` |
+| PATCH | `/patch` | `category_id`, `todo_id` | `TodoPatch` |
 | DELETE | `/delete` | `todo_id` | — |
 
 ### Tags (`/tags`)
 | Method | Path | Query params | Body |
 |--------|------|-------------|------|
-| GET | `/all` | — | — |
-| GET | `/one` | `user_id`, `tag_id` | — |
-| POST | `/create` | `user_id` | `TagCreate` |
-| PATCH | `/patch` | `user_id`, `tag_id` | `TagPatch` |
+| GET | `/all` | `todo_id` | — |
+| GET | `/one` | `todo_id`, `tag_id` | — |
+| POST | `/create` | `todo_id` | `TagCreate` |
+| PATCH | `/patch` | `tag_id` | `TagPatch` |
 | DELETE | `/delete` | `tag_id` | — |
 
 ### Comments (`/comments`)
 | Method | Path | Query params | Body |
 |--------|------|-------------|------|
-| GET | `/all` | — | — |
-| GET | `/item` | `user_id`, `todo_id`, `comment_id` | — |
-| POST | `/create` | `user_id`, `todo_id` | `CommentCreate` |
-| PUT | `/update` | `user_id`, `todo_id`, `comment_id` | `CommentCreate` |
+| GET | `/all` | `todo_id` | — |
+| GET | `/item` | `todo_id`, `comment_id` | — |
+| POST | `/create` | `todo_id` | `CommentCreate` |
+| PUT | `/update` | `todo_id`, `comment_id` | `CommentCreate` |
 | DELETE | `/delete` | `comment_id` | — |
 
 ## Data Model

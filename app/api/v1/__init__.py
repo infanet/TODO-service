@@ -2,4 +2,4 @@ __all__ = [
     "router",
 ]
 
-from .router import router
+from .router import router as router

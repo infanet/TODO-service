@@ -12,6 +12,7 @@ router = APIRouter()
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
 async def handle_register(
-    user: UserCreate, session: AsyncSession = Depends(get_async_session)
+    user: UserCreate,
+    session: AsyncSession = Depends(get_async_session),
 ):
     return await AuthService(session).register(user)

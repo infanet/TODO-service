@@ -1,1 +1,1 @@
-from .router_categories import router_categories
+from .router_categories import router_categories as router_categories

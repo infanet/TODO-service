@@ -10,3 +10,4 @@ class TodoBase(BaseModel):
     status: Status = Status.todo
     priority: Priority = Priority.medium
     deadline: datetime | None = None
+

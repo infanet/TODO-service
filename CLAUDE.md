@@ -13,7 +13,9 @@ Password hashing and JWT authentication are implemented in `app/core/security.py
 ```bash
 poetry install                              # Install dependencies
 uvicorn app.main:app --reload               # Run dev server (from project root)
-black .                                     # Format code
+ruff format .                               # Format code
+ruff check .                                # Lint
+ruff check --fix .                          # Auto-fix lint issues
 alembic upgrade head                        # Apply migrations (from project root)
 alembic revision --autogenerate -m "msg"    # Generate a migration (from project root)
 docker compose up -d                        # Start PostgreSQL container
@@ -53,8 +55,9 @@ app/
 │   ├── todos/       # exported: TodoCreate, TodoResponse, TodoPatch, TodoItems
 │   │                # internal: TodosCategory (defined in todo_response.py, used for nesting)
 │   ├── tags/        # exported: TagCreate, TagPatch, TagResponse, TagItem
-│   └── comments/    # exported: CommentCreate, CommentResponse, CommentItemResponse
-│                    # internal: TodoComment (defined in comment_response.py, used for nesting)
+│   ├── comments/    # exported: CommentCreate, CommentResponse, CommentItemResponse
+│   │                # internal: TodoComment (defined in comment_response.py, used for nesting)
+│   └── auth/        # exported: TokenResponse, RefreshRequest
 ├── services/        # Business logic as classes; __init__.py re-exports all services
 └── repositories/    # Data access as classes; __init__.py re-exports all repositories
 ```

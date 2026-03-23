@@ -1,5 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
+import logging
+import jwt
 
 from repositories import UserRepository, RefreshTokenRepository
 from schemas import UserCreate, UserResponse
@@ -14,7 +16,8 @@ from core import (
     create_refresh_token,
     decode_token,
 )
-import jwt
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -24,9 +27,12 @@ class AuthService:
 
     async def register(self, user: UserCreate) -> UserResponse:
         if await self.user_repository.get_by_email(str(user.email)):
+            logger.warning("Такой email уже существует: %s", user.email)
             raise AllError(ErrorMessages.USER_400).bad_request()
         hashed = hash_password(user.password)
-        return await self.user_repository.create(user=user, hashed_password=hashed)
+        new_user = await self.user_repository.create(user=user, hashed_password=hashed)
+        logger.info("New user register: %s", new_user.id)
+        return new_user
 
     async def login(self, login_user: OAuth2PasswordRequestForm) -> TokenResponse:
         user: User = await self.user_repository.get_by_email(str(login_user.username))

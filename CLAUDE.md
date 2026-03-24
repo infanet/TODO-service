@@ -43,7 +43,8 @@ app/
 │   ├── config.py          # Settings (pydantic-settings); reads .env; exposes `settings` singleton
 │   ├── exceptions.py      # AllError class — returns HTTPException via .not_found() / .bad_request()
 │   ├── error_messages.py  # ErrorMessages class — string constants (USER_404, CATEGORY_404, etc.)
-│   └── security.py        # hash_password, verify_password (bcrypt), create_access_token, create_refresh_token, decode_token
+│   ├── security.py        # hash_password, verify_password (bcrypt), create_access_token, create_refresh_token, decode_token
+│   └── logging.py         # setup_logging (call once at startup), get_logger(name) — stdlib logging to stdout
 ├── db/
 │   ├── base.py      # DeclarativeBase (`Base`)
 │   ├── database.py  # exposes DATABASE_URL, async_engine, async_session_factory, get_async_session
@@ -58,8 +59,8 @@ app/
 │   ├── comments/    # exported: CommentCreate, CommentResponse, CommentItemResponse
 │   │                # internal: TodoComment (defined in comment_response.py, used for nesting)
 │   └── auth/        # exported: TokenResponse, RefreshRequest
-├── services/        # Business logic as classes; __init__.py re-exports all services
-└── repositories/    # Data access as classes; __init__.py re-exports all repositories
+├── services/        # Business logic as classes; __init__.py re-exports UserService, CategoryService, TodoService, TagService, CommentService, AuthService
+└── repositories/    # Data access as classes; __init__.py re-exports UserRepository, CategoryRepository, TodoRepositories, TagRepositories, CommentRepositories, RefreshTokenRepository
 ```
 
 ### Routing Pattern
@@ -273,7 +274,7 @@ Seven ORM models (all inherit `Base` from `db`). `TodoTags` is a join table, not
 - **Import asymmetry**: all internal imports use bare module names (`from db import ...`, `from models import ...`, `from schemas import ...`, `from core import ...`) because `app/` is on `sys.path`. This applies to routers, services, repositories, and alembic env.py.
 - All models must be listed in `app/models/__init__.py` for Alembic autogenerate to detect all tables.
 - **Session DI**: inject `AsyncSession` via `Depends(get_async_session)` (imported from `db`).
-- **`core/__init__.py`** exports: `settings`, `AllError`, `ErrorMessages`, `hash_password`, `verify_password`, `create_access_token`, `create_refresh_token`, `decode_token`. Any new `security.py` functions must also be re-exported here.
+- **`core/__init__.py`** exports: `settings`, `AllError`, `ErrorMessages`, `hash_password`, `verify_password`, `create_access_token`, `create_refresh_token`, `decode_token`, `setup_logging`, `get_logger`. Any new `security.py` or `logging.py` functions must also be re-exported here.
 - **`AllError` usage**: it *returns* an HTTPException, so it must be used with `raise`: `raise AllError(ErrorMessages.USER_404).not_found()`.
 
 ## Infrastructure

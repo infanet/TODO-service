@@ -4,8 +4,9 @@ from models import User
 from repositories import CommentRepositories
 from services import UserService, TodoService
 from schemas import CommentCreate
-from core import AllError, ErrorMessages
+from core import AllError, ErrorMessages, get_logger
 
+logger = get_logger(__name__)
 
 class CommentService:
     def __init__(self, session: AsyncSession):
@@ -16,6 +17,7 @@ class CommentService:
     async def get_404_not_found(self, comments_id: int):
         comments = await self.comment_repositories.get_by_id(comments_id)
         if not comments:
+            logger.warning("Нет комментария с таким индексом %s", comments_id)
             raise AllError(ErrorMessages.COMMENT_404).not_found()
         return comments
 

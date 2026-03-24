@@ -5,8 +5,10 @@ from repositories import UserRepository
 from core import (
     AllError,
     ErrorMessages,
+    get_logger,
 )
 
+logger = get_logger(__name__)
 
 class UserService:
     def __init__(self, session: AsyncSession):
@@ -15,6 +17,7 @@ class UserService:
     @staticmethod
     async def check_current(data_id: int, current_user_id: int):
         if data_id != current_user_id:
+            logger.warning("Не прошло проверку пользователя %s", current_user_id)
             raise AllError(ErrorMessages.FORBIDDEN_403).forbidden()
 
     async def get_users(self):

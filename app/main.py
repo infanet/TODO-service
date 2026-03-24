@@ -7,6 +7,9 @@ import uvicorn
 from fastapi import FastAPI
 
 from api import v1_router
+from core import setup_logging
+
+setup_logging()
 
 app = FastAPI(title="Todo Service")
 

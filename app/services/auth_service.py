@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
-import logging
 import jwt
 
 from repositories import UserRepository, RefreshTokenRepository
@@ -15,9 +14,10 @@ from core import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    get_logger,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AuthService:
@@ -37,6 +37,7 @@ class AuthService:
     async def login(self, login_user: OAuth2PasswordRequestForm) -> TokenResponse:
         user: User = await self.user_repository.get_by_email(str(login_user.username))
         if not user or not verify_password(login_user.password, user.hashed_password):
+            logger.warning("Неверный адрес электронной почты или пароль")
             raise AllError("Invalid email or password").bad_request()
 
         access_token = create_access_token(user.id)
@@ -54,8 +55,10 @@ class AuthService:
         try:
             payload = decode_token(refresh_user.refresh_token)
         except jwt.ExpiredSignatureError:
+            logger.error("Срок действия токена обновления истек")
             raise AllError("Refresh token expired").bad_request() from None
         except jwt.InvalidTokenError:
+            logger.error("Недопустимый токен обновления")
             raise AllError("Invalid refresh token").bad_request() from None
 
         # 2. ищем в БД — он должен существовать и не быть отозван
@@ -63,6 +66,7 @@ class AuthService:
             RefreshToken | None
         ) = await self.refresh_token_repository.get_by_token(refresh_user.refresh_token)
         if not refresh_token or refresh_token.is_revoked:
+            logger.warning("Токен обновления отозван или не найден")
             raise AllError("Refresh token is revoked or not found").bad_request()
 
         # 3. отзываем старый токен

@@ -3,9 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import User
 from repositories import TodoRepositories
 from services import UserService, CategoryService
-from core import AllError, ErrorMessages
+from core import AllError, ErrorMessages, get_logger
 from schemas import TodoPatch, TodoCreate
 
+
+logger = get_logger(__name__)
 
 class TodoService:
     def __init__(self, session: AsyncSession):
@@ -16,6 +18,7 @@ class TodoService:
     async def get_404_not_found(self, todo_id: int):
         todo = await self.todo_repositories.get_by_id(todo_id)
         if not todo:
+            logger.warning("Нет задачи с таким индексом %s", todo_id)
             raise AllError(ErrorMessages.TODO_404).not_found()
         return todo
 

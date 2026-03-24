@@ -4,7 +4,9 @@ from models import User
 from repositories import TagRepositories
 from services import UserService, TodoService
 from schemas import TagCreate, TagPatch
-from core import AllError, ErrorMessages
+from core import AllError, ErrorMessages, get_logger
+
+logger = get_logger(__name__)
 
 
 class TagService:
@@ -16,6 +18,7 @@ class TagService:
     async def get_404_not_found(self, tag_id: int):
         tag = await self.tag_repositories.get_by_id(tag_id)
         if not tag:
+            logger.warning("Нет марки марки с таким индексом %s", tag_id)
             raise AllError(ErrorMessages.TAG_404).not_found()
         return tag
 

@@ -7,6 +7,8 @@ __all__ = [
     "create_access_token",
     "create_refresh_token",
     "decode_token",
+    "setup_logging",
+    "get_logger",
 ]
 
 from .config import settings
@@ -18,4 +20,8 @@ from .security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+)
+from .logging import (
+    setup_logging,
+    get_logger,
 )

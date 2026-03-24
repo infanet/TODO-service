@@ -4,7 +4,9 @@ from models import User
 from repositories import CategoryRepository
 from services import UserService
 from schemas import CategoryCreate, CategoryPatch
-from core import AllError, ErrorMessages
+from core import AllError, ErrorMessages, get_logger
+
+logger = get_logger(__name__)
 
 
 class CategoryService:
@@ -15,6 +17,7 @@ class CategoryService:
     async def get_404_not_found(self, category_id: int):
         category = await self.category_repositories.get_by_id(category_id)
         if not category:
+            logger.warning("Нет категории с таким индексом %s", category_id)
             raise AllError(ErrorMessages.CATEGORY_404).not_found()
         return category
 
